@@ -1,6 +1,7 @@
 import os
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -9,6 +10,8 @@ CORS(app)
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(basedir, "dev.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+app.config["SQLALCHEMY_ECHO"] = True
 
 db = SQLAlchemy(app)
 
@@ -129,8 +132,6 @@ def delete_recipe(id):
 def get_recipe_report():
     """
     Filters recipes by category, difficulty, and max cook time.
-    Example:
-    /api/report?category=1&difficulty=Easy&max_time=30
     """
     query = Recipe.query
 
@@ -147,6 +148,22 @@ def get_recipe_report():
 
     results = query.all()
     return jsonify([r.to_dict() for r in results])
+
+@app.route("/api/search")
+def search_recipes():
+    """
+    Demonstrates safe SQL
+    
+    """
+    q = request.args.get("q", "")
+
+    # unsafe
+    # sql = f"SELECT * FROM recipe WHERE title LIKE '%{q}%'"
+
+    safe_sql = text("SELECT * FROM recipe WHERE title LIKE :search")
+    results = db.session.execute(safe_sql, {"search": f"%{q}%"}).mappings().all()
+
+    return jsonify([dict(r) for r in results])
 
 
 if __name__ == "__main__":
