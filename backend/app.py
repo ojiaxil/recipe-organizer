@@ -1,14 +1,22 @@
 import os
 from flask import Flask, request, jsonify
+from flask import send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+#CORS(app)
+CORS(app, origins=[
+    "https://recipe-organizer-481019.web.app",
+    "https://recipe-organizer-481019.firebaseapp.com"
+])
+
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(basedir, "dev.db")
+#app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(basedir, "dev.db")
+DB_PATH = "/tmp/dev.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 app.config["SQLALCHEMY_ECHO"] = True
@@ -45,10 +53,25 @@ class Recipe(db.Model):
         }
 
 
-@app.route("/")
+'''@app.route("/")
 def hello():
-    return jsonify({"message": "This is the Recipe Organizer backend."})
+    return jsonify({"message": "This is the Recipe Organizer backend."})'''
 
+
+with app.app_context():
+    if not os.path.exists(DB_PATH):
+        open(DB_PATH, "a").close()
+    db.create_all()
+
+    if not Category.query.first():
+        initial = [
+            Category(name="Breakfast"),
+            Category(name="Lunch"),
+            Category(name="Dinner"),
+            Category(name="Dessert"),
+        ]
+        db.session.bulk_save_objects(initial)
+        db.session.commit()
 
 @app.route("/api/categories", methods=["GET"])
 def get_categories():
@@ -153,7 +176,6 @@ def get_recipe_report():
 def search_recipes():
     """
     Demonstrates safe SQL
-    
     """
     q = request.args.get("q", "")
 
@@ -165,8 +187,15 @@ def search_recipes():
 
     return jsonify([dict(r) for r in results])
 
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend(path):
+    if path != "" and os.path.exists(os.path.join("static", path)):
+        return send_from_directory("static", path)
+    return send_from_directory("static", "index.html")
 
-if __name__ == "__main__":
+
+'''if __name__ == "__main__":
     with app.app_context():
         db.create_all()
 
@@ -181,4 +210,8 @@ if __name__ == "__main__":
             db.session.bulk_save_objects(initial)
             db.session.commit()
 
-    app.run(debug=True)
+    app.run(debug=True)'''
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)

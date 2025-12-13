@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import "./index.css";
 
-const API_URL = "http://127.0.0.1:5000";
+//const API_URL = "http://127.0.0.1:5000";
+//const API_URL = "https://recipe-organizer-481019.uc.r.appspot.com";
 
 function App() {
   const [recipes, setRecipes] = useState([]);
@@ -28,12 +29,15 @@ function App() {
   }, []);
 
   const fetchRecipes = async () => {
-    const res = await fetch(`${API_URL}/api/recipes`);
+    //const res = await fetch(`${API_URL}/api/recipes`);
+    const res = await fetch(`/api/recipes`);
+    //const res = await fetch(`${import.meta.env.VITE_API_URL}/api/recipes`);
     setRecipes(await res.json());
   };
 
   const fetchCategories = async () => {
-    const res = await fetch(`${API_URL}/api/categories`);
+    //const res = await fetch(`${API_URL}/api/categories`);
+    const res = await fetch(`/api/categories`);
     setCategories(await res.json());
   };
 
@@ -44,9 +48,12 @@ function App() {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    //const url = editingId
+    //  ? `${API_URL}/api/recipes/${editingId}`
+      //: `${API_URL}/api/recipes`;
     const url = editingId
-      ? `${API_URL}/api/recipes/${editingId}`
-      : `${API_URL}/api/recipes`;
+      ? `/api/recipes/${editingId}`
+      : `/api/recipes`;    
     const method = editingId ? "PUT" : "POST";
 
     await fetch(url, {
@@ -83,7 +90,10 @@ function App() {
 
   const handleDelete = async (id) => {
     if (window.confirm("Delete this recipe?")) {
-      await fetch(`${API_URL}/api/recipes/${id}`, { method: "DELETE" });
+      //await fetch(`${API_URL}/api/recipes/${id}`, { method: "DELETE" });
+      await fetch(`/api/recipes/${id}`, {
+        method: "DELETE"
+      });      
       fetchRecipes();
     }
   };
@@ -97,7 +107,8 @@ function App() {
     e.preventDefault();
     const params = new URLSearchParams();
     Object.entries(filterData).forEach(([k, v]) => v && params.append(k, v));
-    const res = await fetch(`${API_URL}/api/report?${params.toString()}`);
+    //const res = await fetch(`${API_URL}/api/report?${params.toString()}`);
+    const res = await fetch(`/api/report?${params.toString()}`);
     setReportData(await res.json());
   };
 
